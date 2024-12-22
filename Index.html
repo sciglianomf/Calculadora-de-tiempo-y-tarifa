@@ -1,0 +1,235 @@
+<html><head><base href="." />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Tiempo y Tarifa</title>
+<style>
+    :root {
+        --primary: #2c3e50;
+        --secondary: #3498db;
+        --success: #2ecc71;
+        --background: #ecf0f1;
+        --whatsapp: #25D366;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: var(--background);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .calculator-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 500px;
+    }
+
+    h1 {
+        color: var(--primary);
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+    }
+
+    .input-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: var(--secondary);
+    }
+
+    button {
+        width: 100%;
+        padding: 1rem;
+        background-color: var(--secondary);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-bottom: 1rem;
+    }
+
+    button:hover {
+        background-color: var(--primary);
+    }
+
+    .whatsapp-btn {
+        background-color: var(--whatsapp);
+        display: none;
+    }
+
+    .whatsapp-btn:hover {
+        background-color: #128C7E;
+    }
+
+    .result {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background-color: var(--success);
+        color: white;
+        border-radius: 5px;
+        text-align: center;
+        display: none;
+    }
+
+    .error {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    @media (max-width: 480px) {
+        .calculator-container {
+            padding: 1rem;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Calculadora de Tiempo y Tarifa</h1>
+        <div class="input-group">
+            <label for="entrada">Hora de Entrada (HH:mm)</label>
+            <input type="time" id="entrada" required>
+            <div class="error" id="error-entrada">Por favor ingrese una hora válida</div>
+        </div>
+
+        <div class="input-group">
+            <label for="salida">Hora de Salida (HH:mm)</label>
+            <input type="time" id="salida" required>
+            <div class="error" id="error-salida">Por favor ingrese una hora válida</div>
+        </div>
+
+        <div class="input-group">
+            <label for="tarifa">Tarifa por Hora</label>
+            <input type="number" id="tarifa" required step="0.01" min="0">
+            <div class="error" id="error-tarifa">Por favor ingrese una tarifa válida</div>
+        </div>
+
+        <button onclick="calcular()">Calcular</button>
+        <button onclick="compartirWhatsApp()" class="whatsapp-btn" id="whatsapp-btn">
+            Compartir por WhatsApp
+        </button>
+        <div class="result" id="resultado"></div>
+    </div>
+
+    <script>
+        let resultadoCalculado = null;
+
+        function calcular() {
+            // Obtener valores
+            const entrada = document.getElementById('entrada').value;
+            const salida = document.getElementById('salida').value;
+            const tarifa = parseFloat(document.getElementById('tarifa').value);
+
+            // Validar campos
+            if (!entrada || !salida || !tarifa) {
+                mostrarError('Por favor complete todos los campos');
+                return;
+            }
+
+            // Convertir horas a minutos desde medianoche
+            let [horaEntrada, minEntrada] = entrada.split(':').map(Number);
+            let [horaSalida, minSalida] = salida.split(':').map(Number);
+
+            let minutosEntrada = horaEntrada * 60 + minEntrada;
+            let minutosSalida = horaSalida * 60 + minSalida;
+
+            // Si la salida es antes que la entrada, asumimos que es del día siguiente
+            if (minutosSalida < minutosEntrada) {
+                minutosSalida += 24 * 60; // Añadir 24 horas en minutos
+            }
+
+            // Calcular diferencia en horas
+            const diferenciaMinutos = minutosSalida - minutosEntrada;
+            const diferenciaHoras = diferenciaMinutos / 60;
+
+            // Calcular total
+            const total = diferenciaHoras * tarifa;
+
+            // Guardar resultado para compartir
+            resultadoCalculado = {
+                entrada,
+                salida,
+                diferenciaHoras: diferenciaHoras.toFixed(2),
+                tarifa: tarifa.toFixed(2),
+                total: total.toFixed(2),
+                fecha: new Date().toLocaleString()
+            };
+
+            // Mostrar resultado
+            const resultado = document.getElementById('resultado');
+            resultado.style.display = 'block';
+            resultado.style.backgroundColor = '#2ecc71';
+            resultado.innerHTML = `
+                Tiempo total: ${diferenciaHoras.toFixed(2)} horas<br>
+                Total a pagar: $${total.toFixed(2)}<br>
+                Fecha: ${resultadoCalculado.fecha}
+            `;
+
+            // Mostrar botón de WhatsApp
+            document.getElementById('whatsapp-btn').style.display = 'block';
+        }
+
+        function compartirWhatsApp() {
+            if (!resultadoCalculado) return;
+
+            const mensaje = encodeURIComponent(
+                `*Detalles del Cálculo*\n\n` +
+                `📥 Hora de entrada: ${resultadoCalculado.entrada}\n` +
+                `📤 Hora de salida: ${resultadoCalculado.salida}\n` +
+                `⏱️ Tiempo total: ${resultadoCalculado.diferenciaHoras} horas\n` +
+                `💰 Tarifa por hora: $${resultadoCalculado.tarifa}\n` +
+                `💵 Total a pagar: $${resultadoCalculado.total}\n` +
+                `📅 Fecha del cálculo: ${resultadoCalculado.fecha}`
+            );
+
+            window.open(`https://wa.me/?text=${mensaje}`, '_blank');
+        }
+
+        function mostrarError(mensaje) {
+            const resultado = document.getElementById('resultado');
+            resultado.style.display = 'block';
+            resultado.style.backgroundColor = '#e74c3c';
+            resultado.textContent = mensaje;
+            document.getElementById('whatsapp-btn').style.display = 'none';
+        }
+
+        // Limpiar resultado cuando se modifiquen los inputs
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                document.getElementById('resultado').style.display = 'none';
+                document.getElementById('whatsapp-btn').style.display = 'none';
+            });
+        });
+    </script>
+</body></html>
